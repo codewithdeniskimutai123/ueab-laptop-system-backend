@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -58,6 +58,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
+    "AUTH_HEADER_TYPES": ("Bearer",),
     
 }
 
@@ -139,10 +140,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
-MEDIA_URL = '/media/'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'kimutaidenis51@gmail.com'
+EMAIL_HOST_PASSWORD = 'fotu llvo dhfg zqjy'
+
+STATIC_URL = '/static/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+MEDIA_URL = '/media/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 
 AUTH_USER_MODEL = 'users.User'

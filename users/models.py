@@ -5,7 +5,7 @@ from django.db import models
 
 
 class User(AbstractUser):
-
+    student_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
     ROLE_CHOICES = (
         ('student', 'Student'),
         ('security', 'Security'),
@@ -13,11 +13,7 @@ class User(AbstractUser):
     )
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-
-    #  for sending QR code + notifications
     email = models.EmailField(unique=True)
-
-    #  phone number for alerts / security
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     profile_photo = models.ImageField(
         upload_to='profiles/',
