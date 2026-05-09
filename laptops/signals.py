@@ -48,7 +48,7 @@ Serial: {instance.serial_number}
             "image/png"
         )
 
-        owner_email.send(fail_silently=False)
+        owner_email.send(fail_silently=True)
 
         # ---------------- CURRENT HOLDER EMAIL ----------------
         if instance.current_holder and instance.current_holder != instance.owner:
@@ -135,4 +135,4 @@ Brand: {instance.brand}
 Serial: {instance.serial_number}
 """,
                 to=[old_holder.email]
-            ).send(fail_silently=False)
+            ).send(fail_silently=True)

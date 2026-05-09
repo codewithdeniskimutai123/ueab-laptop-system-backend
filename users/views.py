@@ -1,10 +1,11 @@
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, StudentProfileSerializer
 
 #register user
 @api_view(['POST'])
@@ -20,6 +21,14 @@ def register_user(request):
         )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_profile(request):
+
+    serializer = StudentProfileSerializer(request.user)
+
+    return Response(serializer.data)
 
 # get all users
 @api_view(['GET'])

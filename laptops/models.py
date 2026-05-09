@@ -36,8 +36,11 @@ class Laptop(models.Model):
     brand = models.CharField(max_length=50, choices=BRAND_CHOICES)
     serial_number = models.CharField(max_length=100, unique=True )
     qr_code = models.ImageField(upload_to="laptop_qr/", null=True, blank=True)
+    is_inside_library = models.BooleanField(default=False)
     is_checked_out = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
     def save(self, *args, **kwargs):
 

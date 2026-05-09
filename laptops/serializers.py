@@ -32,3 +32,25 @@ class LaptopSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.qr_code.url)
 
         return None
+class MyLaptopSerializer(serializers.ModelSerializer):
+
+    owner_name = serializers.SerializerMethodField()
+    current_holder_name = serializers.SerializerMethodField()
+    class Meta:
+        model = Laptop
+        fields = [
+            "id",
+            "brand",
+            "serial_number",
+            "is_inside_library",
+            "owner_name",
+            "current_holder_name",
+        ]
+
+    def get_owner_name(self, obj):
+        return f"{obj.owner.first_name} {obj.owner.last_name}"
+
+    def get_current_holder_name(self, obj):
+        if obj.current_holder:
+            return f"{obj.current_holder.first_name} {obj.current_holder.last_name}"
+        return None
