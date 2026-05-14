@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenSerializer
 from .models import User
 from .serializers import UserSerializer, StudentProfileSerializer
-
+from .serializers import UpdateProfileSerializer
 #register user
 @api_view(['POST'])
 def register_user(request):
@@ -60,3 +60,33 @@ def get_user(request, pk):
 
 class CustomTokenView(TokenObtainPairView):
     serializer_class = CustomTokenSerializer
+
+
+@api_view(["GET", "PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    user = request.user
+    # GET CURRENT USER PROFILE
+    if request.method == "GET":
+        serializer = UpdateProfileSerializer(user)
+        return Response(serializer.data)
+    # UPDATE PROFILE
+    serializer = UpdateProfileSerializer(
+        user,
+        data=request.data,
+        partial=True,
+        context={"request": request}
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+
+        return Response({
+            "message": "Profile updated successfully",
+            "data": serializer.data
+        })
+
+    return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+    )
