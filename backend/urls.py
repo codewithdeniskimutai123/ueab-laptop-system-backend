@@ -7,12 +7,12 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-
+from users.views import CustomTokenView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
-    path('api/access_token/', TokenObtainPairView.as_view(), name='access_token'),
+    path('api/access_token/', CustomTokenView.as_view(), name='access_token'),
     path('api/refresh_refresh/', TokenRefreshView.as_view(), name='refresh_refresh'),
     path('api/laptops/', include('laptops.urls')),
     path("api/transactions/", include("transactions.urls")),

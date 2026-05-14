@@ -40,3 +40,17 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "role",
             "profile_image",
         ]
+
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+class CustomTokenSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        data["role"] = self.user.role
+        data["username"] = self.user.username
+        data["email"] = self.user.email
+
+        return data
