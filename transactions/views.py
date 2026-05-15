@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.db.models import Q
 from laptops.models import Laptop
 from users.models import User
 from .models import Transaction
@@ -11,6 +11,11 @@ from .serializers import(TransactionSerializer,
                          LaptopMiniSerializer,
                         StudentTransactionSerializer, 
                             SecurityTransactionSerializer)
+from django.contrib.auth import get_user_model
+import qrcode
+from io import BytesIO
+from django.core.files import File
+User = get_user_model()
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -115,7 +120,6 @@ def confirm_transaction(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def transfer_laptop(request):
-
     user = request.user
 
     laptop_id = request.data.get("laptop_id")
@@ -128,7 +132,7 @@ def transfer_laptop(request):
 
     if laptop.owner != user:
         return Response(
-            {"error": "Only laptop owner can transfer ownership"},
+            {"error": "Only the laptop owner can transfer ownership"},
             status=403
         )
 
@@ -137,9 +141,41 @@ def transfer_laptop(request):
     except User.DoesNotExist:
         return Response({"error": "New holder not found"}, status=404)
 
+    if laptop.current_holder == new_holder:
+        return Response(
+            {"error": "This student already holds this laptop"},
+            status=400
+        )
+
     old_holder = laptop.current_holder
 
     laptop.current_holder = new_holder
+    
+    qr_data = {
+        "laptop_id": laptop.id,
+        "owner": {
+            "name": f"{laptop.owner.first_name} {laptop.owner.last_name}",
+            "student_id": getattr(laptop.owner, 'student_id', 'N/A'),
+            "email": laptop.owner.email,
+        },
+        "current_holder": {
+            "name": f"{new_holder.first_name} {new_holder.last_name}",
+            "student_id": getattr(new_holder, 'student_id', 'N/A'),
+            "email": new_holder.email,
+        },
+        "brand": laptop.brand,
+        "serial_number": laptop.serial_number,
+    }
+
+    qr_image = qrcode.make(json.dumps(qr_data))
+    buffer = BytesIO()
+    qr_image.save(buffer)
+    file_name = f"{laptop.serial_number}.png"
+    
+    if laptop.qr_code:
+        laptop.qr_code.delete(save=False)
+        
+    laptop.qr_code.save(file_name, File(buffer), save=False)
     laptop.save()
 
     transaction = Transaction.objects.create(
@@ -151,28 +187,9 @@ def transfer_laptop(request):
         action_type="TRANSFER",
     )
 
-    return Response(
-        TransactionSerializer(
-            transaction,
-            context={"request": request}
-        ).data,
-        status=201
-    )
+    serializer = TransactionSerializer(transaction, context={"request": request})
+    return Response(serializer.data, status=201)
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def my_transactions(request):
-
-    transactions = Transaction.objects.filter(
-        student=request.user
-    ).order_by("-created_at")
-
-    serializer = StudentTransactionSerializer(
-        transactions,
-        many=True
-    )
-
-    return Response(serializer.data)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -261,3 +278,18 @@ def scan_qr(request):
             if laptop.current_holder else None
         )
     }, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_transactions_list(request):
+    user = request.user
+
+    queryset = Transaction.objects.filter(
+        Q(laptop__owner=user) | 
+        Q(previous_holder=user) | 
+        Q(new_holder=user)
+    ).order_by("-created_at") 
+
+    serializer = TransactionSerializer(queryset, many=True, context={"request": request})
+    return Response(serializer.data, status=200)

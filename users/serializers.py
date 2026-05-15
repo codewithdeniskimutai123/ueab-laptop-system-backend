@@ -57,8 +57,6 @@ class CustomTokenSerializer(TokenObtainPairSerializer):
 
         return data
     
-
-
 class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

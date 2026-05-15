@@ -50,7 +50,6 @@ class Laptop(models.Model):
 
         super().save(*args, **kwargs)
 
-        # generate QR only if missing
         if not self.qr_code:
 
             qr_data = {

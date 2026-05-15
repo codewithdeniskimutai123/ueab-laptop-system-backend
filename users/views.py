@@ -8,6 +8,8 @@ from .serializers import CustomTokenSerializer
 from .models import User
 from .serializers import UserSerializer, StudentProfileSerializer
 from .serializers import UpdateProfileSerializer
+from django.db.models import Q
+
 #register user
 @api_view(['POST'])
 def register_user(request):
@@ -31,7 +33,6 @@ def student_profile(request):
 
     return Response(serializer.data)
 
-# get all users
 @api_view(['GET'])
 def get_users(request):
 
@@ -40,7 +41,6 @@ def get_users(request):
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-#get user
 @api_view(['GET'])
 def get_user(request, pk):
 
@@ -56,8 +56,6 @@ def get_user(request, pk):
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-
 class CustomTokenView(TokenObtainPairView):
     serializer_class = CustomTokenSerializer
 
@@ -66,11 +64,9 @@ class CustomTokenView(TokenObtainPairView):
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     user = request.user
-    # GET CURRENT USER PROFILE
     if request.method == "GET":
         serializer = UpdateProfileSerializer(user)
         return Response(serializer.data)
-    # UPDATE PROFILE
     serializer = UpdateProfileSerializer(
         user,
         data=request.data,
@@ -90,3 +86,36 @@ def update_profile(request):
         serializer.errors,
         status=status.HTTP_400_BAD_REQUEST
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def search_student(request):
+    query = request.GET.get("query", "").strip()
+
+    if not query:
+        return Response([])
+
+    students = User.objects.filter(
+        role="student"
+    ).filter(
+        Q(student_id__icontains=query) |
+        Q(username__icontains=query) |
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query) |
+        Q(email__icontains=query)
+    )[:10]
+
+    data = [
+        {
+            "id": student.id,
+            "username": student.username,
+            "first_name": student.first_name,
+            "last_name": student.last_name,
+            "student_id": student.student_id,
+            "email": student.email,
+        }
+        for student in students
+    ]
+
+    return Response(data)

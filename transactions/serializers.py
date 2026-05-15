@@ -39,33 +39,47 @@ class LaptopMiniSerializer(serializers.ModelSerializer):
             "owner",
             "current_holder",
         ]
-class TransactionSerializer(serializers.ModelSerializer):
 
-    laptop = LaptopMiniSerializer()
-    student = UserMiniSerializer()
-    previous_holder = UserMiniSerializer()
-    new_holder = UserMiniSerializer()
-    scanned_by = UserMiniSerializer()
+from rest_framework import serializers
+from .models import Transaction
+
+class TransactionSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+    receiver_name = serializers.SerializerMethodField()
+    laptop_serial = serializers.SerializerMethodField()
+    laptop_brand = serializers.SerializerMethodField() 
+    scanned_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
-
         fields = [
-            "id",
-            "laptop",
-            "student",
-            "previous_holder",
-            "new_holder",
-            "scanned_by",
-            "action_type",
-            "created_at",
-            "updated_at",
+            "id", "laptop", "student", "previous_holder", "new_holder", "scanned_by",
+            "action_type", "created_at", "updated_at",
+            "sender_name", "receiver_name", "laptop_serial",
+            "laptop_brand", "scanned_by_name" 
         ]
+        read_only_fields = ["created_at", "updated_at"]
 
-        read_only_fields = [
-            "created_at",
-            "updated_at",
-        ]
+    def get_sender_name(self, obj):
+        if obj.previous_holder:
+            return f"{obj.previous_holder.first_name} {obj.previous_holder.last_name}".strip() or obj.previous_holder.username
+        return "System"
+
+    def get_receiver_name(self, obj):
+        if obj.new_holder:
+            return f"{obj.new_holder.first_name} {obj.new_holder.last_name}".strip() or obj.new_holder.username
+        return "System"
+
+    def get_laptop_serial(self, obj):
+        return obj.laptop.serial_number if obj.laptop else "N/A"
+
+    def get_laptop_brand(self, obj):
+        return obj.laptop.brand if obj.laptop else "Device"
+
+    def get_scanned_by_name(self, obj):
+        if obj.scanned_by:
+            return f"{obj.scanned_by.first_name} {obj.scanned_by.last_name}".strip() or obj.scanned_by.username
+        return "System Admin"
 
 
 class StudentTransactionSerializer(serializers.ModelSerializer):
@@ -113,3 +127,6 @@ class SecurityTransactionSerializer(serializers.ModelSerializer):
         if obj.scanned_by:
             return f"{obj.scanned_by.first_name} {obj.scanned_by.last_name}"
         return None
+    
+
+

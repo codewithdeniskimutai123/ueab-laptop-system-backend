@@ -28,7 +28,17 @@ class LaptopSerializer(serializers.ModelSerializer):
 class MyLaptopSerializer(serializers.ModelSerializer):
     owner_name = serializers.SerializerMethodField()
     current_holder_name = serializers.SerializerMethodField()
-    qr_code_url = serializers.SerializerMethodField() # 👈 1. Added Method field helper
+    qr_code_url = serializers.SerializerMethodField()
+
+    owner_id = serializers.IntegerField(
+        source="owner.id",
+        read_only=True
+    )
+
+    current_holder_id = serializers.IntegerField(
+        source="current_holder.id",
+        read_only=True
+    )
 
     class Meta:
         model = Laptop
@@ -37,10 +47,15 @@ class MyLaptopSerializer(serializers.ModelSerializer):
             "brand",
             "serial_number",
             "is_inside_library",
+
+            "owner_id",
+            "current_holder_id",
+
             "owner_name",
             "current_holder_name",
-            "qr_code",       # 👈 2. Expose base database asset
-            "qr_code_url",   # 👈 3. Expose generated absolute address link
+
+            "qr_code",
+            "qr_code_url",
         ]
 
     def get_owner_name(self, obj):
@@ -51,10 +66,15 @@ class MyLaptopSerializer(serializers.ModelSerializer):
             return f"{obj.current_holder.first_name} {obj.current_holder.last_name}"
         return None
 
-    def get_qr_code_url(self, obj): # 👈 4. Added path resolution logic
-        request = self.context.get('request')
+    def get_qr_code_url(self, obj):
+        request = self.context.get("request")
+
         if obj.qr_code and request:
-            return request.build_absolute_uri(obj.qr_code.url)
+            return request.build_absolute_uri(
+                obj.qr_code.url
+            )
+
         elif obj.qr_code:
             return obj.qr_code.url
+
         return None

@@ -12,6 +12,7 @@ from .models import Laptop
 from .serializers import LaptopSerializer, MyLaptopSerializer
 from .permissions import IsAdminOnly
 from django.http import Http404, FileResponse
+from django.db.models import Q
 @api_view(['POST'])
 @permission_classes([IsAdminOnly])
 def register_laptop(request):
@@ -139,13 +140,19 @@ def download_qr(request, laptop_id):
 @permission_classes([IsAuthenticated])
 def my_laptop(request):
 
+    user = request.user
+
     laptop = Laptop.objects.filter(
-        current_holder=request.user
+        Q(current_holder=user) |
+        Q(owner=user)
     ).first()
 
     if not laptop:
         return Response({"message": "No laptop assigned"}, status=404)
 
-    serializer = MyLaptopSerializer(laptop)
+    serializer = MyLaptopSerializer(
+        laptop,
+        context={"request": request}
+    )
 
     return Response(serializer.data)
