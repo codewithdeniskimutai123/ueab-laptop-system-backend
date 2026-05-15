@@ -4,7 +4,6 @@ from laptops.models import Laptop
 from users.models import User
 
 
-# USER SERIALIZER (SAFE IMAGE HANDLING)
 class UserMiniSerializer(serializers.ModelSerializer):
 
     profile_photo = serializers.SerializerMethodField()
@@ -26,7 +25,6 @@ class UserMiniSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.profile_photo.url)
         return None
 
-# LAPTOP SERIALIZER (WITH OWNER + HOLDER)
 class LaptopMiniSerializer(serializers.ModelSerializer):
 
     owner = UserMiniSerializer()
@@ -41,7 +39,6 @@ class LaptopMiniSerializer(serializers.ModelSerializer):
             "owner",
             "current_holder",
         ]
-# TRANSACTION SERIALIZER (FULL AUDIT LOG)
 class TransactionSerializer(serializers.ModelSerializer):
 
     laptop = LaptopMiniSerializer()

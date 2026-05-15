@@ -7,17 +7,10 @@ class LaptopSerializer(serializers.ModelSerializer):
     class Meta:
         model = Laptop
         fields = [
-            'id',
-            'owner',
-            'current_holder',
-            'brand',
-            'serial_number',
-            'qr_code',
-            'qr_code_url',
-            'is_checked_out',
-            'created_at'
+            'id', 'owner', 'current_holder', 'brand', 
+            'serial_number', 'qr_code', 'qr_code_url', 
+            'is_checked_out', 'created_at'
         ]
-
         read_only_fields = ['qr_code', 'qr_code_url', 'created_at']
 
     def create(self, validated_data):
@@ -27,15 +20,16 @@ class LaptopSerializer(serializers.ModelSerializer):
     
     def get_qr_code_url(self, obj):
         request = self.context.get('request')
-
         if obj.qr_code and request:
             return request.build_absolute_uri(obj.qr_code.url)
-
         return None
-class MyLaptopSerializer(serializers.ModelSerializer):
 
+
+class MyLaptopSerializer(serializers.ModelSerializer):
     owner_name = serializers.SerializerMethodField()
     current_holder_name = serializers.SerializerMethodField()
+    qr_code_url = serializers.SerializerMethodField() # 👈 1. Added Method field helper
+
     class Meta:
         model = Laptop
         fields = [
@@ -45,6 +39,8 @@ class MyLaptopSerializer(serializers.ModelSerializer):
             "is_inside_library",
             "owner_name",
             "current_holder_name",
+            "qr_code",       # 👈 2. Expose base database asset
+            "qr_code_url",   # 👈 3. Expose generated absolute address link
         ]
 
     def get_owner_name(self, obj):
@@ -53,4 +49,12 @@ class MyLaptopSerializer(serializers.ModelSerializer):
     def get_current_holder_name(self, obj):
         if obj.current_holder:
             return f"{obj.current_holder.first_name} {obj.current_holder.last_name}"
+        return None
+
+    def get_qr_code_url(self, obj): # 👈 4. Added path resolution logic
+        request = self.context.get('request')
+        if obj.qr_code and request:
+            return request.build_absolute_uri(obj.qr_code.url)
+        elif obj.qr_code:
+            return obj.qr_code.url
         return None

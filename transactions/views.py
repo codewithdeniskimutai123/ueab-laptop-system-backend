@@ -12,7 +12,6 @@ from .serializers import(TransactionSerializer,
                         StudentTransactionSerializer, 
                             SecurityTransactionSerializer)
 
-# PREVIEW TRANSACTION
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def preview_transaction(request):
@@ -31,7 +30,6 @@ def preview_transaction(request):
 
     laptop = None
 
-    # ---------------- FIND LAPTOP ----------------
     if laptop_id:
         laptop = Laptop.objects.filter(id=laptop_id).first()
 
@@ -75,7 +73,6 @@ def confirm_transaction(request):
     except Laptop.DoesNotExist:
         return Response({"error": "Laptop not found"}, status=404)
 
-    # ---------------- STATE LOGIC ----------------
     if action == "IN":
 
         if laptop.is_inside_library:
@@ -198,7 +195,6 @@ def scan_qr(request):
 
     user = request.user
 
-    # Only security/admin can scan
     if user.role not in ["admin", "security"]:
         return Response(
             {"error": "Not allowed"},
@@ -225,7 +221,6 @@ def scan_qr(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # SECURITY CHECK (important)
         laptop = Laptop.objects.select_related("owner", "current_holder").get(
             id=laptop_id,
             serial_number=serial_number

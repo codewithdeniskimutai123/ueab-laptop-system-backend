@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Laptop
 from .serializers import LaptopSerializer, MyLaptopSerializer
 from .permissions import IsAdminOnly
-
+from django.http import Http404, FileResponse
 @api_view(['POST'])
 @permission_classes([IsAdminOnly])
 def register_laptop(request):
@@ -21,14 +21,11 @@ def register_laptop(request):
     if serializer.is_valid():
         laptop = serializer.save()
 
-        # ---------------- QR DATA (FIXED) ----------------
-        # ONLY STATIC IDENTIFIER (NO OWNER / HOLDER SNAPSHOT)
         qr_data = {
             "laptop_id": laptop.id,
             "serial_number": laptop.serial_number
         }
 
-        # ---------------- CREATE QR ----------------
         qr_image = qrcode.make(json.dumps(qr_data))
 
         buffer = BytesIO()
@@ -37,15 +34,12 @@ def register_laptop(request):
 
         file_name = f"{laptop.serial_number}.png"
 
-        # ---------------- SAVE QR ----------------
         laptop.qr_code.save(file_name, File(buffer), save=True)
         laptop.refresh_from_db()
 
-        # ---------------- READ FILE ----------------
         with open(laptop.qr_code.path, "rb") as f:
             qr_file = f.read()
 
-        # ---------------- OWNER EMAIL ----------------
         subject = "Laptop Registration Successful"
 
         message = f"""
@@ -75,8 +69,6 @@ http://127.0.0.1:8000/api/laptops/download_qr/{laptop.id}/
 
         email.send()
 
-        # ---------------- HOLDER EMAIL ----------------
-        # (kept same logic — still valid)
         if laptop.current_holder and laptop.current_holder.email != laptop.owner.email:
 
             holder_message = f"""
@@ -114,14 +106,14 @@ http://127.0.0.1:8000/api/laptops/download_qr/{laptop.id}/
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ---------------- DOWNLOAD QR ----------------
-@api_view(['GET'])
+@api_view(['GET', 'OPTIONS']) 
 @permission_classes([IsAuthenticated])
 def download_qr(request, laptop_id):
+    if request.method == 'OPTIONS':
+        return Response(status=200)
 
     try:
         laptop = Laptop.objects.get(id=laptop_id)
-
         user = request.user
 
         if user != laptop.owner and user != laptop.current_holder:
@@ -132,15 +124,16 @@ def download_qr(request, laptop_id):
 
         if not laptop.qr_code:
             raise Http404("QR not found")
-
-        return FileResponse(
+        response = FileResponse(
             laptop.qr_code.open('rb'),
             as_attachment=True,
             filename=f"{laptop.serial_number}_QR.png"
         )
+        return response
 
     except Laptop.DoesNotExist:
         raise Http404("Laptop not found")
+
     
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
