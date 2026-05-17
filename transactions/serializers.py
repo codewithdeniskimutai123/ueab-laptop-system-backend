@@ -36,12 +36,12 @@ class LaptopMiniSerializer(serializers.ModelSerializer):
             "id",
             "brand",
             "serial_number",
+            "is_inside_library",
             "owner",
             "current_holder",
         ]
 
-from rest_framework import serializers
-from .models import Transaction
+
 
 class TransactionSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()

@@ -16,11 +16,11 @@ import qrcode
 from io import BytesIO
 from django.core.files import File
 User = get_user_model()
+from django.utils import timezone
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def preview_transaction(request):
-
     user = request.user
 
     if user.role not in ["admin", "security"]:
@@ -51,13 +51,26 @@ def preview_transaction(request):
     if not laptop:
         return Response({"error": "Laptop not found"}, status=404)
 
-    serializer = LaptopMiniSerializer(
-        laptop,
-        context={"request": request}
-    )
+    return Response({
+        "laptop": {
+            "id": laptop.id,
+            "brand": laptop.brand,
+            "serial_number": laptop.serial_number,
+            "is_inside_library": laptop.is_inside_library,
+        },
+        "owner": {
+            "id": laptop.owner.id,
+            "name": f"{laptop.owner.first_name} {laptop.owner.last_name}".strip() or laptop.owner.username,
+            "student_id": getattr(laptop.owner, "student_id", "N/A"),
+        },
+        "current_holder": {
+            "id": laptop.current_holder.id,
+            "name": f"{laptop.current_holder.first_name} {laptop.current_holder.last_name}".strip() or laptop.current_holder.username,
+            "student_id": getattr(laptop.current_holder, "student_id", "N/A"),
+        } if laptop.current_holder else None
+    }, status=status.HTTP_200_OK)
 
-    return Response(serializer.data)
-# CONFIRM TRANSACTION
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def confirm_transaction(request):
@@ -191,20 +204,25 @@ def transfer_laptop(request):
     return Response(serializer.data, status=201)
 
 
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def recent_transactions(request):
-
     user = request.user
 
     if user.role not in ["admin", "security"]:
         return Response({"error": "Not allowed"}, status=403)
 
-    transactions = Transaction.objects.all().order_by("-created_at")[:20]
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    transactions = Transaction.objects.filter(
+        scanned_by=user,
+        created_at__gte=today_start
+    ).order_by("-created_at")[:20]
 
     serializer = SecurityTransactionSerializer(transactions, many=True)
-
     return Response(serializer.data)
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
