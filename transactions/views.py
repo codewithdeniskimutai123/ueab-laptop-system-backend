@@ -8,8 +8,6 @@ from laptops.models import Laptop
 from users.models import User
 from .models import Transaction
 from .serializers import(TransactionSerializer, 
-                         LaptopMiniSerializer,
-                        StudentTransactionSerializer, 
                             SecurityTransactionSerializer)
 from django.contrib.auth import get_user_model
 import qrcode
@@ -129,7 +127,7 @@ def confirm_transaction(request):
         ).data,
         status=201
     )
-# TRANSFER OWNERSHIP
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def transfer_laptop(request):
@@ -159,9 +157,7 @@ def transfer_laptop(request):
             {"error": "This student already holds this laptop"},
             status=400
         )
-
     old_holder = laptop.current_holder
-
     laptop.current_holder = new_holder
     
     qr_data = {

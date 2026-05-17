@@ -2,8 +2,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.core.mail import EmailMessage
 from django.db import transaction
-
 from .models import Laptop
+
 @receiver(pre_save, sender=Laptop)
 def capture_old_holder(sender, instance, **kwargs):
 
@@ -28,7 +28,6 @@ def send_registration_email(instance):
         with open(file_path, 'rb') as f:
             qr_data = f.read()
 
-        # ---------------- OWNER EMAIL ----------------
         owner_email = EmailMessage(
             subject="Laptop Registration Successful",
             body=f"""
@@ -50,7 +49,6 @@ Serial: {instance.serial_number}
 
         owner_email.send(fail_silently=True)
 
-        # ---------------- CURRENT HOLDER EMAIL ----------------
         if instance.current_holder and instance.current_holder != instance.owner:
 
             holder_email = EmailMessage(
@@ -79,7 +77,6 @@ Serial: {instance.serial_number}
     except Exception as e:
         print("EMAIL FAILED ❌:", e)
 
-# HANDLE REGISTRATION
 @receiver(post_save, sender=Laptop)
 def send_laptop_qr_email(sender, instance, created, **kwargs):
 
@@ -90,7 +87,6 @@ def send_laptop_qr_email(sender, instance, created, **kwargs):
 
     transaction.on_commit(lambda: send_registration_email(instance))
 
-# HANDLE HOLDER CHANGE (TRANSFER LOGIC)
 
 @receiver(post_save, sender=Laptop)
 def handle_holder_change(sender, instance, created, **kwargs):
@@ -105,7 +101,6 @@ def handle_holder_change(sender, instance, created, **kwargs):
 
         print("Holder changed → sending update emails")
 
-        # ---------------- NEW HOLDER ----------------
         if new_holder:
 
             EmailMessage(
@@ -121,7 +116,6 @@ Serial: {instance.serial_number}
                 to=[new_holder.email]
             ).send(fail_silently=False)
 
-        # ---------------- OLD HOLDER ----------------
         if old_holder:
 
             EmailMessage(

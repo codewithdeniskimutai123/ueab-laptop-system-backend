@@ -47,13 +47,10 @@ class MyLaptopSerializer(serializers.ModelSerializer):
             "brand",
             "serial_number",
             "is_inside_library",
-
             "owner_id",
             "current_holder_id",
-
             "owner_name",
             "current_holder_name",
-
             "qr_code",
             "qr_code_url",
         ]

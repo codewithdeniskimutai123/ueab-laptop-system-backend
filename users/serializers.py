@@ -17,7 +17,8 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'phone_number',
             'profile_photo',
-            'password'
+            'password',
+            'role'
         ]
 
     def create(self, validated_data):
@@ -41,6 +42,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
             "username",
             "role",
             "profile_photo",
+            
         ]
 
 

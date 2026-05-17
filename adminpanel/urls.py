@@ -1,23 +1,13 @@
 from django.urls import path
-from .views import (
-    admin_overview,
-    admin_laptops,
-    admin_laptop_detail,
-    admin_users,
-    admin_user_detail,
-    admin_transactions,
-    admin_transaction_detail,
-)
-
+from . import views
 
 urlpatterns = [
-    path("admin_overview/", admin_overview, name="admin_overview"),
-    #all laptops
-    path("laptops/", admin_laptops, name="admin-laptops"),
-    path("laptops/<int:laptop_id>/", admin_laptop_detail, name="admin-laptop-detail"),
-    path("users/", admin_users, name="admin-users"),
-    path("users/<int:user_id>/", admin_user_detail, name="admin-user-detail"),
-    path("transactions/", admin_transactions, name="admin-transactions"),
-    path( "transactions/<int:transaction_id>/", admin_transaction_detail, name="admin-transaction-detail"),
+    path("register_laptop/", views.register_laptop, name="admin_register_laptop"),
+    path("modify_role/", views.admin_modify_user_role, name="admin_modify_role"),
+    path("analytics/", views.admin_global_analytics, name="admin_global_analytics"),
+    path("delete_laptop/<int:laptop_id>/", views.admin_delete_laptop, name="admin_delete_laptop"),
+    path("delete_user/<int:user_id>/", views.admin_delete_user, name="admin_delete_user"),
+    path("list_laptops/", views.list_laptops, name="list_laptops"),
+
 
 ]

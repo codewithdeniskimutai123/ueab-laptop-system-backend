@@ -1,4 +1,3 @@
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,7 +9,6 @@ from .serializers import UserSerializer, StudentProfileSerializer
 from .serializers import UpdateProfileSerializer
 from django.db.models import Q
 
-#register user
 @api_view(['POST'])
 def register_user(request):
     serializer = UserSerializer(data=request.data)

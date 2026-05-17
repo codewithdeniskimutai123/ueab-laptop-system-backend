@@ -38,7 +38,6 @@ class LaptopAdmin(admin.ModelAdmin):
         **kwargs
     ):
 
-        # Only students can own/hold laptops
         if db_field.name in [
             "owner",
             "current_holder"
