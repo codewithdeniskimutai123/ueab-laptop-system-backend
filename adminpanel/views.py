@@ -8,7 +8,7 @@ from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.db.models import Count
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from laptops.models import Laptop
@@ -18,6 +18,9 @@ from transactions.models import Transaction
 from django.core.mail import EmailMessage
 from .permissions import IsAdminOnly
 import logging
+import os
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 
@@ -250,3 +253,99 @@ def list_laptops(request):
     serializer = LaptopsSerializer(laptops, many=True)
     
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def search_student(request):
+   
+    if getattr(request.user, "role", "").lower() != "admin":
+        return Response(
+            {"error": "Access denied. Admin privileges required."}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+        
+    username = request.query_params.get("username", "").strip()
+    if not username:
+        return Response(
+            {"error": "Please provide a target username query parameter."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
+    try:
+        target_user = User.objects.get(username__iexact=username)
+        
+        photo_url = None
+        if getattr(target_user, "profile_photo", None) and target_user.profile_photo:
+            photo_url = request.build_absolute_uri(target_user.profile_photo.url)
+        
+        return Response({
+            "id": target_user.id,
+            "username": target_user.username,
+            "name": f"{target_user.first_name} {target_user.last_name}".strip() or target_user.username,
+            "student_id": getattr(target_user, "student_id", "N/A"),
+            "email": target_user.email,
+            "profile_photo": photo_url
+        }, status=status.HTTP_200_OK)
+        
+    except User.DoesNotExist:
+        return Response(
+            {"error": "No student record matches that username in the Baraton registry."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def update_profile(request):
+    
+    if getattr(request.user, "role", "").lower() != "admin":
+        return Response(
+            {"error": "Access denied. Admin privileges required."}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+        
+    user_id = request.data.get("user_id")
+    photo_file = request.FILES.get("profile_photo")
+    
+    if not user_id:
+        return Response(
+            {"error": "Target user identifier 'user_id' field is required."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
+    if not photo_file:
+        return Response(
+            {"error": "Profile photo image attachment is required."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+        
+    try:
+        target_user = User.objects.get(id=user_id)
+        
+        if target_user.profile_photo and os.path.exists(target_user.profile_photo.path):
+            try:
+                os.remove(target_user.profile_photo.path)
+            except Exception:
+                pass
+                
+        target_user.profile_photo = photo_file
+        target_user.save()
+        
+        photo_url = request.build_absolute_uri(target_user.profile_photo.url)
+        
+        return Response({
+            "message": "User validation profile picture assigned successfully.",
+            "profile_photo": photo_url
+        }, status=status.HTTP_200_OK)
+        
+    except User.DoesNotExist:
+        return Response(
+            {"error": "Target user registry context is invalid or missing."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"An error occurred while saving the profile image asset: {str(e)}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
