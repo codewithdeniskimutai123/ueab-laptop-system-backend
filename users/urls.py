@@ -8,6 +8,9 @@ urlpatterns = [
     path("student_profile/", views.student_profile, name="student_profile"),
     path("update_profile/", views.update_profile, name="update_profile"),
     path("search_student/", views.search_student, name="search_student"),
+    path("request_password_reset/", views.request_password_reset, name="request_password_reset"),
+    path("confirm_password_reset/", views.confirm_password_reset, name="confirm_password_reset"),
+
 ]
 
 
